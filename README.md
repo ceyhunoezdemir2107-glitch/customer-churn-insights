@@ -2,6 +2,8 @@
 
 End-to-end data science project with an interactive Streamlit web dashboard for customer churn prediction, model comparison, explainability, and retention recommendations.
 
+Live dashboard: https://customer-churn-insights-mzk2hechptruvs83ctdteg.streamlit.app/
+
 ## Business Question
 
 Which customers are most likely to churn, what factors drive churn risk, and which retention actions should the business prioritize?
@@ -40,6 +42,8 @@ Churn rate: 26.54%
 ## Streamlit Web Dashboard
 
 The project includes an interactive Streamlit web dashboard for exploring the churn model in a browser. It is designed as a desktop analytics tool rather than a mobile app.
+
+Live app: https://customer-churn-insights-mzk2hechptruvs83ctdteg.streamlit.app/
 
 The dashboard supports:
 
@@ -361,8 +365,4 @@ streamlit run app/streamlit_app.py
 ## Next Steps
 
 - Expand exploratory data analysis in `notebooks/01_eda.ipynb`.
-
-
-
-
 
