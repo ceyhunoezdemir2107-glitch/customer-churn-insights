@@ -19,6 +19,8 @@ FIGURES_DIR = REPORTS_DIR / "figures"
 MODEL_COMPARISON_PATH = REPORTS_DIR / "model_comparison.csv"
 PERMUTATION_IMPORTANCE_PATH = REPORTS_DIR / "permutation_importance.csv"
 THRESHOLD_ANALYSIS_PATH = REPORTS_DIR / "threshold_analysis.csv"
+DATASET_CUSTOMERS = 7043
+DATASET_CHURN_RATE = 0.2654
 
 
 st.set_page_config(page_title="Customer Churn Insights", layout="wide")
@@ -145,8 +147,8 @@ def show_metric_cards(data: pd.DataFrame | None, comparison: pd.DataFrame | None
         cards[0].metric("Customers", f"{len(data):,}")
         cards[1].metric("Churn rate", f"{data['Churn'].mean():.1%}")
     else:
-        cards[0].metric("Customers", "n/a")
-        cards[1].metric("Churn rate", "n/a")
+        cards[0].metric("Customers", f"{DATASET_CUSTOMERS:,}")
+        cards[1].metric("Churn rate", f"{DATASET_CHURN_RATE:.1%}")
 
     if comparison is not None and not comparison.empty:
         best_model = comparison.sort_values("roc_auc", ascending=False).iloc[0]
@@ -296,3 +298,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
