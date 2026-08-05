@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import sys
 
 import joblib
@@ -9,8 +9,6 @@ import streamlit as st
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-
-from src.data import clean_telco_data, load_raw_data
 
 
 MODEL_PATH = PROJECT_ROOT / "models" / "churn_model.joblib"
@@ -31,14 +29,6 @@ def load_model():
     if not MODEL_PATH.exists():
         return None
     return joblib.load(MODEL_PATH)
-
-
-@st.cache_data
-def load_clean_data() -> pd.DataFrame | None:
-    try:
-        return clean_telco_data(load_raw_data(PROJECT_ROOT / "data" / "raw" / "telco_customer_churn.csv"))
-    except FileNotFoundError:
-        return None
 
 
 @st.cache_data
@@ -141,14 +131,10 @@ def build_customer_input() -> pd.DataFrame:
     )
 
 
-def show_metric_cards(data: pd.DataFrame | None, comparison: pd.DataFrame | None) -> None:
+def show_metric_cards(comparison: pd.DataFrame | None) -> None:
     cards = st.columns(4)
-    if data is not None:
-        cards[0].metric("Customers", f"{len(data):,}")
-        cards[1].metric("Churn rate", f"{data['Churn'].mean():.1%}")
-    else:
-        cards[0].metric("Customers", f"{DATASET_CUSTOMERS:,}")
-        cards[1].metric("Churn rate", f"{DATASET_CHURN_RATE:.1%}")
+    cards[0].metric("Customers", f"{DATASET_CUSTOMERS:,}")
+    cards[1].metric("Churn rate", f"{DATASET_CHURN_RATE:.1%}")
 
     if comparison is not None and not comparison.empty:
         best_model = comparison.sort_values("roc_auc", ascending=False).iloc[0]
@@ -167,135 +153,151 @@ def image_or_warning(filename: str, caption: str) -> None:
         st.warning(f"Missing report figure: {filename}. Run `python scripts/generate_reports.py`.")
 
 
-def main() -> None:
-    model = load_model()
-    data = load_clean_data()
-    comparison = load_model_comparison()
-    importance = load_permutation_importance()
-    threshold_analysis = load_threshold_analysis()
+def render_prediction() -> None:
+    st.subheader("Customer Risk Prediction")
+    customer = build_customer_input()
+    decision_threshold = st.slider("Decision threshold", min_value=0.05, max_value=0.95, value=0.50, step=0.05)
 
-    st.title("Customer Churn Insights")
-    st.caption("Streamlit web dashboard for churn prediction, model comparison, explainability, and retention recommendations.")
-
-    show_metric_cards(data, comparison)
-
-    prediction_tab, performance_tab, threshold_tab, insights_tab = st.tabs(
-        ["Prediction", "Model Performance", "Threshold Tuning", "Business Insights"]
-    )
-
-    with prediction_tab:
-        st.subheader("Customer Risk Prediction")
-        customer = build_customer_input()
-        decision_threshold = st.slider("Decision threshold", min_value=0.05, max_value=0.95, value=0.50, step=0.05)
-
+    if st.button("Predict churn risk", type="primary"):
+        model = load_model()
         if model is None:
             st.error("Model not found. Run `python -m src.train` first.")
-        elif st.button("Predict churn risk", type="primary"):
-            probability = float(model.predict_proba(customer)[0, 1])
-            prediction = int(probability >= decision_threshold)
-            label, recommendation = risk_label(probability)
+            return
 
-            left, right = st.columns([1, 2])
-            left.metric("Churn probability", f"{probability:.1%}")
-            left.metric("Risk level", label)
-            right.progress(min(max(probability, 0.0), 1.0))
-            right.write(recommendation)
-            right.write("Predicted class: churn" if prediction == 1 else "Predicted class: no churn")
-            right.write(f"Decision threshold: {decision_threshold:.2f}")
+        probability = float(model.predict_proba(customer)[0, 1])
+        prediction = int(probability >= decision_threshold)
+        label, recommendation = risk_label(probability)
 
-            with st.expander("Input customer profile"):
-                st.dataframe(customer, use_container_width=True)
+        left, right = st.columns([1, 2])
+        left.metric("Churn probability", f"{probability:.1%}")
+        left.metric("Risk level", label)
+        right.progress(min(max(probability, 0.0), 1.0))
+        right.write(recommendation)
+        right.write("Predicted class: churn" if prediction == 1 else "Predicted class: no churn")
+        right.write(f"Decision threshold: {decision_threshold:.2f}")
 
-    with performance_tab:
-        st.subheader("Model Comparison")
-        if comparison is not None:
-            st.dataframe(
-                comparison.sort_values("roc_auc", ascending=False).style.format(
-                    {
-                        "accuracy": "{:.3f}",
-                        "precision": "{:.3f}",
-                        "recall": "{:.3f}",
-                        "f1": "{:.3f}",
-                        "roc_auc": "{:.3f}",
-                    }
-                ),
-                use_container_width=True,
-            )
-        else:
-            st.warning("Missing model comparison. Run `python -m src.train`.")
+        with st.expander("Input customer profile"):
+            st.dataframe(customer, use_container_width=True)
 
-        image_or_warning("model_roc_auc_comparison.png", "ROC-AUC comparison across trained models")
 
-        col_roc, col_pr = st.columns(2)
-        with col_roc:
-            image_or_warning("roc_curve.png", "ROC curve for selected model")
-        with col_pr:
-            image_or_warning("precision_recall_curve.png", "Precision-recall curve for selected model")
+def render_performance(comparison: pd.DataFrame | None) -> None:
+    st.subheader("Model Comparison")
+    if comparison is not None:
+        st.dataframe(
+            comparison.sort_values("roc_auc", ascending=False).style.format(
+                {
+                    "accuracy": "{:.3f}",
+                    "precision": "{:.3f}",
+                    "recall": "{:.3f}",
+                    "f1": "{:.3f}",
+                    "roc_auc": "{:.3f}",
+                }
+            ),
+            use_container_width=True,
+        )
+    else:
+        st.warning("Missing model comparison. Run `python -m src.train`.")
 
-        image_or_warning("confusion_matrix.png", "Confusion matrix at default threshold 0.50")
+    image_or_warning("model_roc_auc_comparison.png", "ROC-AUC comparison across trained models")
 
-    with threshold_tab:
-        st.subheader("Threshold Tuning")
-        st.write("The default classification threshold is 0.50, but churn campaigns often need a lower threshold to catch more at-risk customers.")
-        if threshold_analysis is not None:
-            best_f1 = threshold_analysis.sort_values("f1", ascending=False).iloc[0]
-            col_a, col_b, col_c, col_d = st.columns(4)
-            col_a.metric("Best F1 threshold", f"{best_f1['threshold']:.2f}")
-            col_b.metric("Precision", f"{best_f1['precision']:.3f}")
-            col_c.metric("Recall", f"{best_f1['recall']:.3f}")
-            col_d.metric("Predicted churn rate", f"{best_f1['predicted_churn_rate']:.1%}")
-            st.dataframe(
-                threshold_analysis.sort_values("f1", ascending=False).style.format(
-                    {
-                        "threshold": "{:.2f}",
-                        "precision": "{:.3f}",
-                        "recall": "{:.3f}",
-                        "f1": "{:.3f}",
-                        "predicted_churn_rate": "{:.1%}",
-                    }
-                ),
-                use_container_width=True,
-            )
-        else:
-            st.warning("Missing threshold analysis. Run `python scripts/generate_reports.py`.")
-        image_or_warning("threshold_tradeoff.png", "Precision, recall, and F1 across decision thresholds")
+    col_roc, col_pr = st.columns(2)
+    with col_roc:
+        image_or_warning("roc_curve.png", "ROC curve for selected model")
+    with col_pr:
+        image_or_warning("precision_recall_curve.png", "Precision-recall curve for selected model")
 
-    with insights_tab:
-        st.subheader("Churn Drivers")
-        col_a, col_b = st.columns(2)
-        with col_a:
-            image_or_warning("churn_distribution.png", "Dataset churn distribution")
-            image_or_warning("tenure_distribution_by_churn.png", "Tenure distribution by churn status")
-        with col_b:
-            image_or_warning("churn_by_contract.png", "Churn rate by contract type")
-            image_or_warning("monthly_charges_by_churn.png", "Monthly charges by churn status")
+    image_or_warning("confusion_matrix.png", "Confusion matrix at default threshold 0.50")
 
-        st.subheader("Explainability")
-        if importance is not None:
-            st.dataframe(
-                importance.head(10).style.format({"importance_mean": "{:.4f}", "importance_std": "{:.4f}"}),
-                use_container_width=True,
-            )
-        else:
-            st.warning("Missing permutation importance table. Run `python scripts/generate_reports.py`.")
 
-        col_c, col_d = st.columns(2)
-        with col_c:
-            image_or_warning("permutation_importance.png", "Top original features by permutation importance")
-        with col_d:
-            image_or_warning("shap_summary.png", "SHAP summary for encoded model features")
+def render_threshold_tuning() -> None:
+    threshold_analysis = load_threshold_analysis()
 
-        st.subheader("Retention Actions")
-        st.markdown(
-            """
+    st.subheader("Threshold Tuning")
+    st.write("The default classification threshold is 0.50, but churn campaigns often need a lower threshold to catch more at-risk customers.")
+    if threshold_analysis is not None:
+        best_f1 = threshold_analysis.sort_values("f1", ascending=False).iloc[0]
+        col_a, col_b, col_c, col_d = st.columns(4)
+        col_a.metric("Best F1 threshold", f"{best_f1['threshold']:.2f}")
+        col_b.metric("Precision", f"{best_f1['precision']:.3f}")
+        col_c.metric("Recall", f"{best_f1['recall']:.3f}")
+        col_d.metric("Predicted churn rate", f"{best_f1['predicted_churn_rate']:.1%}")
+        st.dataframe(
+            threshold_analysis.sort_values("f1", ascending=False).style.format(
+                {
+                    "threshold": "{:.2f}",
+                    "precision": "{:.3f}",
+                    "recall": "{:.3f}",
+                    "f1": "{:.3f}",
+                    "predicted_churn_rate": "{:.1%}",
+                }
+            ),
+            use_container_width=True,
+        )
+    else:
+        st.warning("Missing threshold analysis. Run `python scripts/generate_reports.py`.")
+    image_or_warning("threshold_tradeoff.png", "Precision, recall, and F1 across decision thresholds")
+
+
+def render_business_insights() -> None:
+    importance = load_permutation_importance()
+
+    st.subheader("Churn Drivers")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        image_or_warning("churn_distribution.png", "Dataset churn distribution")
+        image_or_warning("tenure_distribution_by_churn.png", "Tenure distribution by churn status")
+    with col_b:
+        image_or_warning("churn_by_contract.png", "Churn rate by contract type")
+        image_or_warning("monthly_charges_by_churn.png", "Monthly charges by churn status")
+
+    st.subheader("Explainability")
+    if importance is not None:
+        st.dataframe(
+            importance.head(10).style.format({"importance_mean": "{:.4f}", "importance_std": "{:.4f}"}),
+            use_container_width=True,
+        )
+    else:
+        st.warning("Missing permutation importance table. Run `python scripts/generate_reports.py`.")
+
+    col_c, col_d = st.columns(2)
+    with col_c:
+        image_or_warning("permutation_importance.png", "Top original features by permutation importance")
+    with col_d:
+        image_or_warning("shap_summary.png", "SHAP summary for encoded model features")
+
+    st.subheader("Retention Actions")
+    st.markdown(
+        """
 - Prioritize short-tenure customers with month-to-month contracts.
 - Review high monthly charges for customers with elevated churn probability.
 - Promote security, backup, and support services to increase product engagement.
 - Tune the decision threshold before launching a campaign, because campaign cost and expected retained revenue determine the optimal cutoff.
 """
-        )
+    )
+
+
+def main() -> None:
+    comparison = load_model_comparison()
+
+    st.title("Customer Churn Insights")
+    st.caption("Streamlit web dashboard for churn prediction, model comparison, explainability, and retention recommendations.")
+
+    show_metric_cards(comparison)
+
+    section = st.sidebar.radio(
+        "Section",
+        ["Prediction", "Model Performance", "Threshold Tuning", "Business Insights"],
+    )
+
+    if section == "Prediction":
+        render_prediction()
+    elif section == "Model Performance":
+        render_performance(comparison)
+    elif section == "Threshold Tuning":
+        render_threshold_tuning()
+    elif section == "Business Insights":
+        render_business_insights()
 
 
 if __name__ == "__main__":
     main()
-
