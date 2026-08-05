@@ -1,4 +1,4 @@
-# Customer Churn Insights
+﻿# Customer Churn Insights
 
 End-to-end data science project with an interactive Streamlit web dashboard for customer churn prediction, model comparison, explainability, and retention recommendations.
 
@@ -317,21 +317,13 @@ Main file path: app/streamlit_app.py
 The raw dataset is not required for the deployed dashboard. The app uses the committed model artifact and report outputs for prediction, model evaluation, and visual explanations.
 ## How to Run
 
-Create and activate a virtual environment, then install app dependencies:
+Create and activate a virtual environment, then install dependencies:
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 ```
-
-For local training, report generation, tests, and screenshot capture, install the development dependencies:
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-Streamlit Community Cloud installs `requirements.txt`, which is intentionally kept lightweight for faster app startup. Full analysis dependencies such as SHAP and Seaborn live in `requirements-dev.txt`.
 
 Run tests:
 
@@ -354,6 +346,7 @@ python scripts/generate_reports.py
 Capture dashboard screenshots for the README:
 
 ```bash
+pip install -r requirements-dev.txt
 python scripts/capture_dashboard_screenshots.py
 ```
 
@@ -372,3 +365,4 @@ streamlit run app/streamlit_app.py
 ## Next Steps
 
 - Expand exploratory data analysis in `notebooks/01_eda.ipynb`.
+
