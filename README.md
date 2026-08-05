@@ -1,4 +1,4 @@
-﻿# Customer Churn Insights
+# Customer Churn Insights
 
 End-to-end data science project with an interactive Streamlit web dashboard for customer churn prediction, model comparison, explainability, and retention recommendations.
 
@@ -314,7 +314,7 @@ Branch: main
 Main file path: app/streamlit_app.py
 ```
 
-The raw dataset is not required for the deployed dashboard. The app uses the committed model artifact and report outputs for prediction, model evaluation, and visual explanations.
+The raw dataset is not required for the deployed dashboard. The app uses the committed model artifact and report outputs for prediction, model evaluation, and visual explanations. Streamlit Cloud uses `app/requirements.txt` for the dashboard deployment, while the root `requirements.txt` keeps the full local data science environment.
 ## How to Run
 
 Create and activate a virtual environment, then install dependencies:
