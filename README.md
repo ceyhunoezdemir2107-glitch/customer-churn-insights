@@ -314,10 +314,10 @@ Branch: main
 Main file path: app/streamlit_app.py
 ```
 
-The raw dataset is not required for the deployed dashboard. The app uses the committed model artifact and report outputs for prediction, model evaluation, and visual explanations. Streamlit Cloud uses `app/requirements.txt` for the dashboard deployment, while the root `requirements.txt` keeps the full local data science environment.
+The raw dataset is not required for the deployed dashboard. The app uses the committed model artifact and report outputs for prediction, model evaluation, and visual explanations. Streamlit Cloud uses the root `requirements.txt`, which is intentionally kept focused on runtime dependencies for a stable deployment.
 ## How to Run
 
-Create and activate a virtual environment, then install dependencies:
+Create and activate a virtual environment, then install app dependencies:
 
 ```bash
 python -m venv .venv
@@ -365,4 +365,3 @@ streamlit run app/streamlit_app.py
 ## Next Steps
 
 - Expand exploratory data analysis in `notebooks/01_eda.ipynb`.
-
