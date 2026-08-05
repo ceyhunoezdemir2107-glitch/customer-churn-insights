@@ -62,6 +62,8 @@ streamlit run app/streamlit_app.py
 
 ## Dashboard Screenshots
 
+The deployed dashboard uses a left sidebar to switch between prediction, model performance, threshold tuning, and business insight views.
+
 ### Prediction View
 
 ![Dashboard Prediction](reports/screenshots/dashboard_prediction.png)

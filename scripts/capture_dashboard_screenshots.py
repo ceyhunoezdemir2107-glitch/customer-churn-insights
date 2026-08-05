@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
@@ -8,6 +8,12 @@ SCREENSHOT_DIR = PROJECT_ROOT / "reports" / "screenshots"
 DASHBOARD_URL = "http://localhost:8501"
 CHROME_PATH = Path("C:/Program Files/Google/Chrome/Application/chrome.exe")
 EDGE_PATH = Path("C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe")
+SECTION_Y = {
+    "Prediction": 114,
+    "Model Performance": 137,
+    "Threshold Tuning": 160,
+    "Business Insights": 183,
+}
 
 
 def browser_path() -> str:
@@ -23,9 +29,10 @@ def capture(page, filename: str) -> None:
     page.screenshot(path=str(SCREENSHOT_DIR / filename), full_page=True)
 
 
-def click_tab(page, label: str) -> None:
-    page.get_by_role("tab", name=label).click()
-    page.wait_for_timeout(1500)
+def open_section(page, label: str, expected_text: str) -> None:
+    page.mouse.click(70, SECTION_Y[label])
+    page.wait_for_selector(f"text={expected_text}", timeout=30000)
+    page.wait_for_timeout(1000)
 
 
 def main() -> None:
@@ -34,19 +41,21 @@ def main() -> None:
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(executable_path=browser_path(), headless=True)
         page = browser.new_page(viewport={"width": 1440, "height": 1100}, device_scale_factor=1)
-        page.goto(DASHBOARD_URL, wait_until="networkidle")
+        page.goto(DASHBOARD_URL, wait_until="domcontentloaded")
         page.wait_for_selector("text=Customer Churn Insights", timeout=30000)
 
+        open_section(page, "Prediction", "Customer Risk Prediction")
         page.get_by_role("button", name="Predict churn risk").click()
+        page.wait_for_selector("text=Churn probability", timeout=30000)
         capture(page, "dashboard_prediction.png")
 
-        click_tab(page, "Model Performance")
+        open_section(page, "Model Performance", "Model Comparison")
         capture(page, "dashboard_model_performance.png")
 
-        click_tab(page, "Threshold Tuning")
+        open_section(page, "Threshold Tuning", "Best F1 threshold")
         capture(page, "dashboard_threshold_tuning.png")
 
-        click_tab(page, "Business Insights")
+        open_section(page, "Business Insights", "Retention Actions")
         capture(page, "dashboard_business_insights.png")
 
         browser.close()
@@ -56,4 +65,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

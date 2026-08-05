@@ -148,7 +148,7 @@ def show_metric_cards(comparison: pd.DataFrame | None) -> None:
 def image_or_warning(filename: str, caption: str) -> None:
     path = FIGURES_DIR / filename
     if path.exists():
-        st.image(str(path), caption=caption, use_container_width=True)
+        st.image(str(path), caption=caption, width="stretch")
     else:
         st.warning(f"Missing report figure: {filename}. Run `python scripts/generate_reports.py`.")
 
@@ -177,7 +177,7 @@ def render_prediction() -> None:
         right.write(f"Decision threshold: {decision_threshold:.2f}")
 
         with st.expander("Input customer profile"):
-            st.dataframe(customer, use_container_width=True)
+            st.dataframe(customer, width="stretch")
 
 
 def render_performance(comparison: pd.DataFrame | None) -> None:
@@ -193,7 +193,7 @@ def render_performance(comparison: pd.DataFrame | None) -> None:
                     "roc_auc": "{:.3f}",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
         )
     else:
         st.warning("Missing model comparison. Run `python -m src.train`.")
@@ -231,7 +231,7 @@ def render_threshold_tuning() -> None:
                     "predicted_churn_rate": "{:.1%}",
                 }
             ),
-            use_container_width=True,
+            width="stretch",
         )
     else:
         st.warning("Missing threshold analysis. Run `python scripts/generate_reports.py`.")
@@ -254,7 +254,7 @@ def render_business_insights() -> None:
     if importance is not None:
         st.dataframe(
             importance.head(10).style.format({"importance_mean": "{:.4f}", "importance_std": "{:.4f}"}),
-            use_container_width=True,
+            width="stretch",
         )
     else:
         st.warning("Missing permutation importance table. Run `python scripts/generate_reports.py`.")
